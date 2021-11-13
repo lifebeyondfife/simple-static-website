@@ -1,0 +1,153 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+    "Description": "Simple static website generator. With just an ACM certificate, a Route53 hosted zone, and a domain name, this template will create a DNS record, CloudFront CDN, and S3 bucket to host your website. You just have to put some HTML in the bucket once the CloudFormation stack is complete.",
+    "Parameters": {
+        "AWSCertificateARN": {
+            "Type": "String",
+            "Description": "You must create register your domain in ACM, and provide this field with the full arn identifier for your domain certificate e.g. arn:aws:acm:us-east-1:567800000000:certificate/1243abcd-xxxx-xxxx-xxxx-xxxxxxxxxxxx. You can find your existing certificates here: https://console.aws.amazon.com/acm/home"
+        },
+        "WebsiteDomainName": {
+            "Type": "String",
+            "Description": "This is the domain, or subdomain, that you wish to turn into a static website e.g. mysite.mydomain.com"
+        },
+        "HostedZone": {
+            "Type": "String",
+            "Description": "You must already have a Hosted Zone setup for your domain in Route53. This is the toplevel domain e.g. mydomain.com"
+        }
+    },
+    "Resources": {
+      "CloudFrontIdentity": {
+        "Type": "AWS::CloudFront::CloudFrontOriginAccessIdentity",
+        "Properties": {
+          "CloudFrontOriginAccessIdentityConfig": {
+            "Comment": "Simple Website Origin Access Identity"
+          }
+        }
+      },
+      "DNSRecordSet": {
+        "Type": "AWS::Route53::RecordSet",
+        "Properties": {
+          "AliasTarget": {
+            "HostedZoneId": "Z2FDTNDATAQYW2",
+            "DNSName": { "Fn::GetAtt": [ "DistributionCloudFrontNet", "DomainName" ] }
+          },
+          "HostedZoneName": {
+            "Fn::Join": [
+              "",
+              [ { "Ref": "HostedZone" }, "." ]
+            ]
+          },
+          "Name": { "Ref": "WebsiteDomainName" },
+          "Type": "A"
+        }
+      },
+      "S3WebsiteBucket": {
+        "Type": "AWS::S3::Bucket",
+        "Properties": {
+          "BucketName": { "Ref": "WebsiteDomainName" },
+          "WebsiteConfiguration": {
+            "IndexDocument": "index.html"
+          }
+        },
+        "DeletionPolicy": "Retain"
+      },
+      "DistributionCloudFrontNet": {
+        "Type": "AWS::CloudFront::Distribution",
+        "Properties": {
+          "DistributionConfig": {
+            "Aliases": [
+              { "Ref": "WebsiteDomainName" }
+            ],
+            "Enabled": true,
+            "HttpVersion": "http2",
+            "PriceClass": "PriceClass_100",
+            "DefaultRootObject": "index.html",
+            "DefaultCacheBehavior": {
+              "TargetOriginId": {"Fn::Join" : [ "", [ "S3-origin-", { "Ref": "S3WebsiteBucket" } ] ] },
+              "ViewerProtocolPolicy": "redirect-to-https",
+              "MinTTL": 0,
+              "AllowedMethods": [
+                "HEAD",
+                "GET"
+              ],
+              "CachedMethods": [
+                "HEAD",
+                "GET"
+              ],
+              "ForwardedValues": {
+                "Cookies": {
+                  "Forward": "none"
+                },
+                "QueryString": true
+              }
+            },
+            "Origins": [
+              {
+                "DomainName": { "Fn::GetAtt" : [ "S3WebsiteBucket", "RegionalDomainName" ] },
+                "Id": {"Fn::Join" : [ "", [ "S3-origin-", { "Ref": "S3WebsiteBucket" } ] ] },
+                "S3OriginConfig": {
+                  "OriginAccessIdentity": { "Fn::Sub": "origin-access-identity/cloudfront/${CloudFrontIdentity}" }
+                }
+              }
+            ],
+            "Restrictions": {
+              "GeoRestriction": {
+                "RestrictionType": "none",
+                "Locations": [
+  
+                ]
+              }
+            },
+            "ViewerCertificate": {
+              "SslSupportMethod": "sni-only",
+              "MinimumProtocolVersion": "TLSv1.2_2021",
+              "AcmCertificateArn": { "Ref": "AWSCertificateARN" }
+            }
+          }
+        }
+      },
+      "S3WebsiteBucketPolicy": {
+        "Type": "AWS::S3::BucketPolicy",
+        "Properties": {
+          "Bucket": {
+            "Ref": "S3WebsiteBucket"
+          },
+          "PolicyDocument": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Principal": {
+                    "AWS": { "Fn::Join" : [ "", [
+                      "arn:aws:iam::cloudfront:user/CloudFront Origin Access Identity ",
+                      { "Ref": "CloudFrontIdentity" }
+                    ] ] }
+                },
+                "Action": "s3:GetObject",
+                "Resource": {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "arn:aws:s3:::",
+                      { "Ref": "S3WebsiteBucket" },
+                      "/*"
+                    ]
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    "Outputs": {
+      "Route53URL": {
+        "Value": { "Ref": "DNSRecordSet" },
+        "Description": "Simple website URL (remember to put some HTML in the S3 bucket)"
+      },
+      "CloudFrontURL": {
+        "Value": { "Fn::GetAtt" : [ "DistributionCloudFrontNet", "DomainName" ] },
+        "Description": "CloudFront URL"
+      }
+    }
+  }
