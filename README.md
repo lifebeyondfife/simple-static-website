@@ -5,7 +5,7 @@ Create a simple, cheap, CDN backed, static website using a single AWS CloudForma
 1. Register a domain in AWS
 2. Created a Hosted Zone for that domain in Route53
 3. Request an SSL certificate for that domain in ACM
-4. Copy the ARN of the ACM certificate to your clipboard. It should have the format rn:aws:acm:us-east-1:567800000000:certificate/1243abcd-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+4. Copy the ARN of the ACM certificate to your clipboard. It should have the format arn:aws:acm:us-east-1:567800000000:certificate/1243abcd-xxxx-xxxx-xxxx-xxxxxxxxxxxx
 5. Create a new CloudFormation stack using the `simple-static-website.json` template
 6. Provide the three parameters: ACM arn, domain name for the website, Route53 hosted zone name
 7. Provision the CloudFormation stack
