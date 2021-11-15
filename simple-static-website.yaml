@@ -1,0 +1,167 @@
+---
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Cloudfront-ed S3 Bucket
+Parameters:
+  WebsiteName:
+    Type: String
+    Description: E.g. the "www" in www.example.com
+  BucketName:
+    Type: String
+    Default: ""
+    Description: If not supplied, a bucket will be created and name after the stack
+  DomainName:
+    Type: String
+    Description: E.g. "example.com" in www.example.com
+  HostedZoneId:
+    Type: AWS::Route53::HostedZone::Id
+    Description: You must already have a Hosted Zone setup for your domain in Route53.
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: DNS
+        Parameters:
+          - HostedZoneId
+          - WebsiteName
+          - DomainName
+      - Label:
+          default: Optional
+        Parameters:
+          - BucketName
+    ParameterLabels:
+      BucketName:
+        default: Existing S3 Bucket Name
+      DomainName:
+        default: Domain Name
+      WebsiteName:
+        default: Website Name
+      HostedZoneId:
+        default: Hosted Zone Id
+Conditions:
+  BucketNameEmpty: !Equals [!Ref BucketName, ""]
+Resources:
+  Certificate:
+    Type: AWS::CertificateManager::Certificate
+    Properties:
+      DomainName: !Sub ${WebsiteName}.${DomainName}
+      DomainValidationOptions:
+        - DomainName: !Sub ${WebsiteName}.${DomainName}
+          HostedZoneId: !Ref HostedZoneId
+      ValidationMethod: DNS
+  CloudFrontIdentity:
+    Type: AWS::CloudFront::CloudFrontOriginAccessIdentity
+    Properties:
+      CloudFrontOriginAccessIdentityConfig:
+        Comment: Simple Website Origin Access Identity
+  ARecordSet:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      AliasTarget:
+        HostedZoneId: Z2FDTNDATAQYW2
+        DNSName: !GetAtt DistributionCloudFrontNet.DomainName
+      HostedZoneId: !Ref HostedZoneId
+      Name: !Sub ${WebsiteName}.${DomainName}
+      Type: A
+  AAAARecordSet:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      AliasTarget:
+        HostedZoneId: Z2FDTNDATAQYW2
+        DNSName: !GetAtt DistributionCloudFrontNet.DomainName
+      HostedZoneId: !Ref HostedZoneId
+      Name: !Sub ${WebsiteName}.${DomainName}
+      Type: AAAA
+  HTML:
+    Type: AWS::S3::Bucket
+    Condition: BucketNameEmpty
+    Properties:
+      WebsiteConfiguration:
+        IndexDocument: index.html
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+  DistributionCloudFrontNet:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Aliases:
+          - !Sub ${WebsiteName}.${DomainName}
+        Enabled: true
+        HttpVersion: http2
+        PriceClass: PriceClass_100
+        DefaultRootObject: index.html
+        DefaultCacheBehavior:
+          TargetOriginId:
+            !If [
+              BucketNameEmpty,
+              !Sub "S3-origin-${HTML}",
+              !Sub "S3-origin-${BucketName}",
+            ]
+          ViewerProtocolPolicy: redirect-to-https
+          AllowedMethods:
+            - HEAD
+            - GET
+          CachedMethods:
+            - HEAD
+            - GET
+          ForwardedValues:
+            Cookies:
+              Forward: none
+            QueryString: true
+        Origins:
+          - DomainName:
+              !If [
+                BucketNameEmpty,
+                !GetAtt HTML.RegionalDomainName,
+                !Sub "${BucketName}.s3.us-east-1.amazonaws.com",
+              ]
+            Id:
+              !If [
+                BucketNameEmpty,
+                !Sub "S3-origin-${HTML}",
+                !Sub "S3-origin-${BucketName}",
+              ]
+            S3OriginConfig:
+              OriginAccessIdentity:
+                Fn::Sub: origin-access-identity/cloudfront/${CloudFrontIdentity}
+        Restrictions:
+          GeoRestriction:
+            RestrictionType: none
+            Locations: []
+        ViewerCertificate:
+          SslSupportMethod: sni-only
+          MinimumProtocolVersion: TLSv1.2_2021
+          AcmCertificateArn: !Ref Certificate
+  BucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !If [
+                BucketNameEmpty,
+                !Ref HTML,
+                !Ref BucketName,
+              ]
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS: !Sub "arn:aws:iam::cloudfront:user/CloudFront Origin Access Identity ${CloudFrontIdentity}"
+            Action: s3:GetObject
+            Resource: !If [
+                BucketNameEmpty,
+                !Sub "arn:aws:s3:::${HTML}/*",
+                !Sub "arn:aws:s3:::${BucketName}/*",
+              ]
+Outputs:
+  Route53URL:
+    Value: !Sub https://${ARecordSet}
+    Description: Simple website URL (remember to put some HTML in the S3 bucket)
+  CloudFrontURL:
+    Value: !GetAtt DistributionCloudFrontNet.DomainName
+    Description: CloudFront URL
+  Upload:
+    Value: !If [
+                BucketNameEmpty,
+                !Sub "aws s3 cp index.html s3://${HTML}",
+                !Sub "aws s3 cp index.html s3://${BucketName}",
+              ]
+    Description: Upload your first file
