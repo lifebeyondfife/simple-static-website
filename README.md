@@ -14,7 +14,7 @@ Create a simple, cheap, CDN backed, static website using a single AWS CloudForma
 1. Provision the CloudFormation stack using the console or with awscli:
 
     ```
-    ﬌ aws cloudformation deploy \
+    aws cloudformation deploy \
         --stack-name foo \
         --template-file simple-static-website.yaml \
         --parameter-overrides \
