@@ -10,7 +10,7 @@ Create a simple, cheap, CDN backed, static website using a single AWS CloudForma
     * WebsiteName
     * HostedZoneId (using the console, a list will be provided)
     --- 
-    * BucketName Optional, if you want to use an existing bucket.
+    * BucketName Optional, if you want to use an existing bucket. Cloudformation will generate a bucketname using the stackname-HTML-randomcharacters if left empty.
 1. Provision the CloudFormation stack using the console or with awscli:
 
     ```
