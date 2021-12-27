@@ -9,8 +9,7 @@ Create a simple, cheap, CDN backed, static website using a single AWS CloudForma
     * DomainName
     * WebsiteName
     * HostedZoneId (using the console, a list will be provided)
-    --- 
-    * BucketName Optional, if you want to use an existing bucket. Cloudformation will generate a bucketname using the stackname-HTML-randomcharacters if left empty.
+    * BucketName (Optional), if you want to use an existing bucket. CloudFormation will generate the bucket name from the URL subdomain, if left empty.
 1. Provision the CloudFormation stack using the console or with awscli:
 
     ```
@@ -29,4 +28,4 @@ Create a simple, cheap, CDN backed, static website using a single AWS CloudForma
 Remember that the CloudFront CDN will cache your website at several locations around the world. If you change your site, you will have to [invalidate the cache](https://www.simplified.guide/aws/cloudfront/invalidate-cache). Charges apply, but on the whole this is an extremely cheap setup because it doesn't run any servers.
 
 ## Acknowledgements
-This script was inspired by [Alain Seng's excellent blog post](https://medium.com/@Al-un/aws-cloudformation-https-static-website-s3-route53-cloudfront-438090157c1f), as well as the output of my existing manually provisioned sites run through Amazon's now defunct [CloudFormer template](https://web.archive.org/web/20191203150607/https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/cfn-using-cloudformer.html). CloudFormer is an excellent tool, however, it has been swept under the carpet by Amazon owing to the increasing number of CVEs the solution left users open to. There's a good write up by [karimelmel](https://github.com/karimelmel) about this [here](https://blog.karims.cloud/2020/09/25/cloudformer-review-part-1.html). Thanks to [eisenhowerj](https://github.com/eisenhowerj) for improving up my CloudFormation script, and adding new features.
+This script was inspired by [Alain Seng's excellent blog post](https://medium.com/@Al-un/aws-cloudformation-https-static-website-s3-route53-cloudfront-438090157c1f), as well as the output of my existing manually provisioned sites run through Amazon's now defunct [CloudFormer template](https://web.archive.org/web/20191203150607/https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/cfn-using-cloudformer.html). CloudFormer is an excellent tool, however, it has been swept under the carpet by Amazon owing to the increasing number of CVEs the solution left users open to. There's a good write up by [karimelmel](https://github.com/karimelmel) about this [here](https://blog.karims.cloud/2020/09/25/cloudformer-review-part-1.html). Thanks to [eisenhowerj](https://github.com/eisenhowerj) for improving my CloudFormation script, and adding new features.
