@@ -88,11 +88,15 @@
               "ValidationMethod": "DNS"
           }
       },
-      "CloudFrontIdentity": {
-          "Type": "AWS::CloudFront::CloudFrontOriginAccessIdentity",
+      "OriginAccessControl": {
+          "Type": "AWS::CloudFront::OriginAccessControl",
           "Properties": {
-              "CloudFrontOriginAccessIdentityConfig": {
-                  "Comment": "Simple Website Origin Access Identity"
+              "OriginAccessControlConfig": {
+                  "Name": "Simple Website Origin Access Control",
+                  "Description": "OAC for Simple Website",
+                  "OriginAccessControlOriginType": "s3",
+                  "SigningBehavior": "always",
+                  "SigningProtocol": "sigv4"
               }
           }
       },
@@ -220,10 +224,11 @@
                                   }
                               ]
                           },
-                          "S3OriginConfig": {
-                              "OriginAccessIdentity": {
-                                  "Fn::Sub": "origin-access-identity/cloudfront/${CloudFrontIdentity}"
-                              }
+                          "OriginAccessControlId": {
+                              "Fn::GetAtt": [
+                                  "OriginAccessControl",
+                                  "Id"
+                              ]
                           }
                       }
                   ],
@@ -263,9 +268,7 @@
                       {
                           "Effect": "Allow",
                           "Principal": {
-                              "AWS": {
-                                  "Fn::Sub": "arn:aws:iam::cloudfront:user/CloudFront Origin Access Identity ${CloudFrontIdentity}"
-                              }
+                              "Service": "cloudfront.amazonaws.com"
                           },
                           "Action": "s3:GetObject",
                           "Resource": {
@@ -278,6 +281,13 @@
                                       "Fn::Sub": "arn:aws:s3:::${BucketName}/*"
                                   }
                               ]
+                          },
+                          "Condition": {
+                              "StringEquals": {
+                                  "AWS:SourceArn": {
+                                      "Fn::Sub": "arn:aws:cloudfront::${AWS::AccountId}:distribution/${DistributionCloudFrontNet}"
+                                  }
+                              }
                           }
                       }
                   ]
