@@ -125,6 +125,7 @@ Resources:
                 !Sub "S3-origin-${HTML}",
                 !Sub "S3-origin-${BucketName}",
               ]
+            S3OriginConfig: {}
             OriginAccessControlId: !GetAtt OriginAccessControl.Id
         Restrictions:
           GeoRestriction:

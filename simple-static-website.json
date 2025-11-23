@@ -224,6 +224,7 @@
                                   }
                               ]
                           },
+                          "S3OriginConfig": {},
                           "OriginAccessControlId": {
                               "Fn::GetAtt": [
                                   "OriginAccessControl",
