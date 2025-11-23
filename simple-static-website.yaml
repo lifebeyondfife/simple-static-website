@@ -48,11 +48,15 @@ Resources:
         - DomainName: !Sub ${WebsiteName}.${DomainName}
           HostedZoneId: !Ref HostedZoneId
       ValidationMethod: DNS
-  CloudFrontIdentity:
-    Type: AWS::CloudFront::CloudFrontOriginAccessIdentity
+  OriginAccessControl:
+    Type: AWS::CloudFront::OriginAccessControl
     Properties:
-      CloudFrontOriginAccessIdentityConfig:
-        Comment: Simple Website Origin Access Identity
+      OriginAccessControlConfig:
+        Name: Simple Website Origin Access Control
+        Description: OAC for Simple Website
+        OriginAccessControlOriginType: s3
+        SigningBehavior: always
+        SigningProtocol: sigv4
   ARecordSet:
     Type: AWS::Route53::RecordSet
     Properties:
@@ -121,9 +125,8 @@ Resources:
                 !Sub "S3-origin-${HTML}",
                 !Sub "S3-origin-${BucketName}",
               ]
-            S3OriginConfig:
-              OriginAccessIdentity:
-                Fn::Sub: origin-access-identity/cloudfront/${CloudFrontIdentity}
+            S3OriginConfig: {}
+            OriginAccessControlId: !GetAtt OriginAccessControl.Id
         Restrictions:
           GeoRestriction:
             RestrictionType: none
@@ -145,13 +148,16 @@ Resources:
         Statement:
           - Effect: Allow
             Principal:
-              AWS: !Sub "arn:aws:iam::cloudfront:user/CloudFront Origin Access Identity ${CloudFrontIdentity}"
+              Service: cloudfront.amazonaws.com
             Action: s3:GetObject
             Resource: !If [
                 BucketNameEmpty,
                 !Sub "arn:aws:s3:::${HTML}/*",
                 !Sub "arn:aws:s3:::${BucketName}/*",
               ]
+            Condition:
+              StringEquals:
+                "AWS:SourceArn": !Sub "arn:aws:cloudfront::${AWS::AccountId}:distribution/${DistributionCloudFrontNet}"
 Outputs:
   Route53URL:
     Value: !Sub https://${ARecordSet}
