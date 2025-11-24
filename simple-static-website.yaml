@@ -94,15 +94,13 @@ Resources:
             AccessControlMaxAgeSec: 31536000
             IncludeSubdomains: true
             Override: true
-          XContentTypeOptions:
+          ContentTypeOptions:
             Override: true
-          XFrameOptions:
+          FrameOptions:
             FrameOption: DENY
             Override: true
           ReferrerPolicy:
             ReferrerPolicy: strict-origin-when-cross-origin
-            Override: true
-          ContentTypeOptions:
             Override: true
   DistributionCloudFrontNet:
     Type: AWS::CloudFront::Distribution
