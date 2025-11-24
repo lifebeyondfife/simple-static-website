@@ -156,6 +156,37 @@
           "DeletionPolicy": "Retain",
           "UpdateReplacePolicy": "Retain"
       },
+      "ResponseHeadersPolicy": {
+          "Type": "AWS::CloudFront::ResponseHeadersPolicy",
+          "Properties": {
+              "ResponseHeadersPolicyConfig": {
+                  "Name": {
+                      "Fn::Sub": "${AWS::StackName}-security-headers"
+                  },
+                  "SecurityHeadersConfig": {
+                      "StrictTransportSecurity": {
+                          "AccessControlMaxAgeSec": 31536000,
+                          "IncludeSubdomains": true,
+                          "Override": true
+                      },
+                      "XContentTypeOptions": {
+                          "Override": true
+                      },
+                      "XFrameOptions": {
+                          "FrameOption": "DENY",
+                          "Override": true
+                      },
+                      "ReferrerPolicy": {
+                          "ReferrerPolicy": "strict-origin-when-cross-origin",
+                          "Override": true
+                      },
+                      "ContentTypeOptions": {
+                          "Override": true
+                      }
+                  }
+              }
+          }
+      },
       "DistributionCloudFrontNet": {
           "Type": "AWS::CloudFront::Distribution",
           "Properties": {
@@ -195,6 +226,9 @@
                               "Forward": "none"
                           },
                           "QueryString": true
+                      },
+                      "ResponseHeadersPolicyId": {
+                          "Ref": "ResponseHeadersPolicy"
                       }
                   },
                   "Origins": [
