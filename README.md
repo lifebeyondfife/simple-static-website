@@ -24,6 +24,11 @@ Create a simple, cheap, CDN backed, static website using a single AWS CloudForma
 1. Put a simple index.html file in the newly created [S3 bucket](https://s3.console.aws.amazon.com/s3/home). Check CloudFormation output of the stack for a sample awscli command.
 1. Visit your new website at the domain you provided. See CloudFormation outputs for URL.
 
+## Error Page Handling
+The CloudFormation template configures CloudFront to serve a custom error page for better user experience. You should include a `404.html` file in your S3 bucket as part of your static site content.
+
+**Note:** Both 403 and 404 errors from the origin are served as 404 responses to users. This is because S3 returns a 403 (Forbidden) error for missing objects when accessed through CloudFront with Origin Access Control (OAC), rather than a 404 (Not Found). The custom error page configuration handles both cases by serving your 404.html file.
+
 ## A note on using a Content Distribution Network (CDN)
 Remember that the CloudFront CDN will cache your website at several locations around the world. If you change your site, you will have to [invalidate the cache](https://www.simplified.guide/aws/cloudfront/invalidate-cache). Charges apply, but on the whole this is an extremely cheap setup because it doesn't run any servers.
 
