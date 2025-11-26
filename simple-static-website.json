@@ -197,6 +197,20 @@
                   "HttpVersion": "http2",
                   "PriceClass": "PriceClass_100",
                   "DefaultRootObject": "index.html",
+                  "CustomErrorResponses": [
+                      {
+                          "ErrorCode": 403,
+                          "ResponseCode": 404,
+                          "ResponsePagePath": "/404.html",
+                          "ErrorCachingMinTTL": 300
+                      },
+                      {
+                          "ErrorCode": 404,
+                          "ResponseCode": 404,
+                          "ResponsePagePath": "/404.html",
+                          "ErrorCachingMinTTL": 300
+                      }
+                  ],
                   "DefaultCacheBehavior": {
                       "TargetOriginId": {
                           "Fn::If": [
