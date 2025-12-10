@@ -48,15 +48,6 @@ Resources:
         - DomainName: !Sub ${WebsiteName}.${DomainName}
           HostedZoneId: !Ref HostedZoneId
       ValidationMethod: DNS
-  OriginAccessControl:
-    Type: AWS::CloudFront::OriginAccessControl
-    Properties:
-      OriginAccessControlConfig:
-        Name: Simple Website Origin Access Control
-        Description: OAC for Simple Website
-        OriginAccessControlOriginType: s3
-        SigningBehavior: always
-        SigningProtocol: sigv4
   ARecordSet:
     Type: AWS::Route53::RecordSet
     Properties:
@@ -82,6 +73,11 @@ Resources:
       WebsiteConfiguration:
         IndexDocument: index.html
       BucketName: !Sub ${WebsiteName}.${DomainName}
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: false
+        BlockPublicPolicy: false
+        IgnorePublicAcls: false
+        RestrictPublicBuckets: false
     DeletionPolicy: Retain
     UpdateReplacePolicy: Retain
   ResponseHeadersPolicy:
@@ -250,8 +246,8 @@ Resources:
           - DomainName:
               !If [
                 BucketNameEmpty,
-                !GetAtt HTML.RegionalDomainName,
-                !Sub "${BucketName}.s3.us-east-1.amazonaws.com",
+                !Sub "${HTML}.s3-website-${AWS::Region}.amazonaws.com",
+                !Sub "${BucketName}.s3-website-${AWS::Region}.amazonaws.com",
               ]
             Id:
               !If [
@@ -259,8 +255,9 @@ Resources:
                 !Sub "S3-origin-${HTML}",
                 !Sub "S3-origin-${BucketName}",
               ]
-            S3OriginConfig: {}
-            OriginAccessControlId: !GetAtt OriginAccessControl.Id
+            CustomOriginConfig:
+              HTTPPort: 80
+              OriginProtocolPolicy: http-only
         Restrictions:
           GeoRestriction:
             RestrictionType: none
@@ -281,17 +278,13 @@ Resources:
         Version: "2012-10-17"
         Statement:
           - Effect: Allow
-            Principal:
-              Service: cloudfront.amazonaws.com
+            Principal: "*"
             Action: s3:GetObject
             Resource: !If [
                 BucketNameEmpty,
                 !Sub "arn:aws:s3:::${HTML}/*",
                 !Sub "arn:aws:s3:::${BucketName}/*",
               ]
-            Condition:
-              StringEquals:
-                "AWS:SourceArn": !Sub "arn:aws:cloudfront::${AWS::AccountId}:distribution/${DistributionCloudFrontNet}"
 Outputs:
   Route53URL:
     Value: !Sub https://${ARecordSet}

@@ -88,18 +88,6 @@
               "ValidationMethod": "DNS"
           }
       },
-      "OriginAccessControl": {
-          "Type": "AWS::CloudFront::OriginAccessControl",
-          "Properties": {
-              "OriginAccessControlConfig": {
-                  "Name": "Simple Website Origin Access Control",
-                  "Description": "OAC for Simple Website",
-                  "OriginAccessControlOriginType": "s3",
-                  "SigningBehavior": "always",
-                  "SigningProtocol": "sigv4"
-              }
-          }
-      },
       "ARecordSet": {
           "Type": "AWS::Route53::RecordSet",
           "Properties": {
@@ -151,6 +139,12 @@
               },
               "BucketName": {
                   "Fn::Sub": "${WebsiteName}.${DomainName}"
+              },
+              "PublicAccessBlockConfiguration": {
+                "BlockPublicAcls": false,
+                "BlockPublicPolicy": false,
+                "IgnorePublicAcls": false,
+                "RestrictPublicBuckets": false
               }
           },
           "DeletionPolicy": "Retain",
@@ -437,13 +431,10 @@
                               "Fn::If": [
                                   "BucketNameEmpty",
                                   {
-                                      "Fn::GetAtt": [
-                                          "HTML",
-                                          "RegionalDomainName"
-                                      ]
+                                      "Fn::Sub": "${HTML}.s3-website-${AWS::Region}.amazonaws.com"
                                   },
                                   {
-                                      "Fn::Sub": "${BucketName}.s3.us-east-1.amazonaws.com"
+                                      "Fn::Sub": "${BucketName}.s3-website-${AWS::Region}.amazonaws.com"
                                   }
                               ]
                           },
@@ -458,12 +449,9 @@
                                   }
                               ]
                           },
-                          "S3OriginConfig": {},
-                          "OriginAccessControlId": {
-                              "Fn::GetAtt": [
-                                  "OriginAccessControl",
-                                  "Id"
-                              ]
+                          "CustomOriginConfig": {
+                            "HTTPPort": 80,
+                            "OriginProtocolPolicy": "http-only"
                           }
                       }
                   ],
@@ -502,9 +490,7 @@
                   "Statement": [
                       {
                           "Effect": "Allow",
-                          "Principal": {
-                              "Service": "cloudfront.amazonaws.com"
-                          },
+                          "Principal": "*",
                           "Action": "s3:GetObject",
                           "Resource": {
                               "Fn::If": [
@@ -516,13 +502,6 @@
                                       "Fn::Sub": "arn:aws:s3:::${BucketName}/*"
                                   }
                               ]
-                          },
-                          "Condition": {
-                              "StringEquals": {
-                                  "AWS:SourceArn": {
-                                      "Fn::Sub": "arn:aws:cloudfront::${AWS::AccountId}:distribution/${DistributionCloudFrontNet}"
-                                  }
-                              }
                           }
                       }
                   ]
