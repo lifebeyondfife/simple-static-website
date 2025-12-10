@@ -117,115 +117,6 @@ Resources:
             ResponseCode: 404
             ResponsePagePath: /404.html
             ErrorCachingMinTTL: 300
-        CacheBehaviors:
-          - PathPattern: "*.css"
-            TargetOriginId:
-              !If [
-                BucketNameEmpty,
-                !Sub "S3-origin-${HTML}",
-                !Sub "S3-origin-${BucketName}",
-              ]
-            ViewerProtocolPolicy: redirect-to-https
-            CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6
-          - PathPattern: "*.js"
-            TargetOriginId:
-              !If [
-                BucketNameEmpty,
-                !Sub "S3-origin-${HTML}",
-                !Sub "S3-origin-${BucketName}",
-              ]
-            ViewerProtocolPolicy: redirect-to-https
-            CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6
-          - PathPattern: "*.jpg"
-            TargetOriginId:
-              !If [
-                BucketNameEmpty,
-                !Sub "S3-origin-${HTML}",
-                !Sub "S3-origin-${BucketName}",
-              ]
-            ViewerProtocolPolicy: redirect-to-https
-            CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6
-          - PathPattern: "*.jpeg"
-            TargetOriginId:
-              !If [
-                BucketNameEmpty,
-                !Sub "S3-origin-${HTML}",
-                !Sub "S3-origin-${BucketName}",
-              ]
-            ViewerProtocolPolicy: redirect-to-https
-            CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6
-          - PathPattern: "*.png"
-            TargetOriginId:
-              !If [
-                BucketNameEmpty,
-                !Sub "S3-origin-${HTML}",
-                !Sub "S3-origin-${BucketName}",
-              ]
-            ViewerProtocolPolicy: redirect-to-https
-            CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6
-          - PathPattern: "*.gif"
-            TargetOriginId:
-              !If [
-                BucketNameEmpty,
-                !Sub "S3-origin-${HTML}",
-                !Sub "S3-origin-${BucketName}",
-              ]
-            ViewerProtocolPolicy: redirect-to-https
-            CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6
-          - PathPattern: "*.ico"
-            TargetOriginId:
-              !If [
-                BucketNameEmpty,
-                !Sub "S3-origin-${HTML}",
-                !Sub "S3-origin-${BucketName}",
-              ]
-            ViewerProtocolPolicy: redirect-to-https
-            CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6
-          - PathPattern: "*.svg"
-            TargetOriginId:
-              !If [
-                BucketNameEmpty,
-                !Sub "S3-origin-${HTML}",
-                !Sub "S3-origin-${BucketName}",
-              ]
-            ViewerProtocolPolicy: redirect-to-https
-            CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6
-          - PathPattern: "*.woff"
-            TargetOriginId:
-              !If [
-                BucketNameEmpty,
-                !Sub "S3-origin-${HTML}",
-                !Sub "S3-origin-${BucketName}",
-              ]
-            ViewerProtocolPolicy: redirect-to-https
-            CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6
-          - PathPattern: "*.woff2"
-            TargetOriginId:
-              !If [
-                BucketNameEmpty,
-                !Sub "S3-origin-${HTML}",
-                !Sub "S3-origin-${BucketName}",
-              ]
-            ViewerProtocolPolicy: redirect-to-https
-            CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6
-          - PathPattern: "*.ttf"
-            TargetOriginId:
-              !If [
-                BucketNameEmpty,
-                !Sub "S3-origin-${HTML}",
-                !Sub "S3-origin-${BucketName}",
-              ]
-            ViewerProtocolPolicy: redirect-to-https
-            CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6
-          - PathPattern: "*.webp"
-            TargetOriginId:
-              !If [
-                BucketNameEmpty,
-                !Sub "S3-origin-${HTML}",
-                !Sub "S3-origin-${BucketName}",
-              ]
-            ViewerProtocolPolicy: redirect-to-https
-            CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6
         DefaultCacheBehavior:
           TargetOriginId:
             !If [
@@ -240,7 +131,10 @@ Resources:
           CachedMethods:
             - HEAD
             - GET
-          CachePolicyId: 4135ea2d-6df8-44a3-9df3-4b5a84be39ad
+          ForwardedValues:
+            QueryString: false
+            Cookies:
+              Forward: none
           ResponseHeadersPolicyId: !Ref ResponseHeadersPolicy
         Origins:
           - DomainName:
