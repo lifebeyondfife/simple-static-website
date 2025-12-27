@@ -7,7 +7,6 @@ Create a simple, cheap, CDN backed, static website using a single AWS CloudForma
 1. Create a new [CloudFormation stack](https://console.aws.amazon.com/cloudformation/home?region=us-east-1) using the `simple-static-website.yaml` template. This *MUST* be done in `us-east-1` owing to constraints with CloudFront.
 1. Provide the parameters:
     * DomainName
-    * WebsiteName
     * HostedZoneId (using the console, a list will be provided)
     * BucketName (Optional), if you want to use an existing bucket. CloudFormation will generate the bucket name from the URL subdomain, if left empty.
 1. Provision the CloudFormation stack using the console or with awscli:
@@ -19,7 +18,6 @@ Create a simple, cheap, CDN backed, static website using a single AWS CloudForma
         --parameter-overrides \
             DomainName=example.com \
             HostedZoneId=ABCDEFGHIJK0123456789 \
-            WebsiteName=www
     ```
 1. Put a simple index.html file in the newly created [S3 bucket](https://s3.console.aws.amazon.com/s3/home). Check CloudFormation output of the stack for a sample awscli command.
 1. Visit your new website at the domain you provided. See CloudFormation outputs for URL.
