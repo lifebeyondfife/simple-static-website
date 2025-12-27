@@ -2,18 +2,14 @@
   "AWSTemplateFormatVersion": "2010-09-09",
   "Description": "Cloudfront-ed S3 Bucket",
   "Parameters": {
-      "WebsiteName": {
+      "DomainName": {
           "Type": "String",
-          "Description": "E.g. the \"www\" in www.example.com"
+          "Description": "Complete domain name, e.g. \"example.com\" or \"www.example.com\""
       },
       "BucketName": {
           "Type": "String",
           "Default": "",
           "Description": "If not supplied, a bucket will be created and named after the stack"
-      },
-      "DomainName": {
-          "Type": "String",
-          "Description": "E.g. \"example.com\" in www.example.com"
       },
       "HostedZoneId": {
           "Type": "AWS::Route53::HostedZone::Id",
@@ -29,7 +25,6 @@
                   },
                   "Parameters": [
                       "HostedZoneId",
-                      "WebsiteName",
                       "DomainName"
                   ]
               },
@@ -48,9 +43,6 @@
               },
               "DomainName": {
                   "default": "Domain Name"
-              },
-              "WebsiteName": {
-                  "default": "Website Name"
               },
               "HostedZoneId": {
                   "default": "Hosted Zone Id"
@@ -72,14 +64,10 @@
       "Certificate": {
           "Type": "AWS::CertificateManager::Certificate",
           "Properties": {
-              "DomainName": {
-                  "Fn::Sub": "${WebsiteName}.${DomainName}"
-              },
+              "DomainName": { "Ref": "DomainName" },
               "DomainValidationOptions": [
                   {
-                      "DomainName": {
-                          "Fn::Sub": "${WebsiteName}.${DomainName}"
-                      },
+                      "DomainName": { "Ref": "DomainName" },
                       "HostedZoneId": {
                           "Ref": "HostedZoneId"
                       }
@@ -103,9 +91,7 @@
               "HostedZoneId": {
                   "Ref": "HostedZoneId"
               },
-              "Name": {
-                  "Fn::Sub": "${WebsiteName}.${DomainName}"
-              },
+              "Name": { "Ref": "DomainName" },
               "Type": "A"
           }
       },
@@ -124,9 +110,7 @@
               "HostedZoneId": {
                   "Ref": "HostedZoneId"
               },
-              "Name": {
-                  "Fn::Sub": "${WebsiteName}.${DomainName}"
-              },
+              "Name": { "Ref": "DomainName" },
               "Type": "AAAA"
           }
       },
@@ -137,9 +121,7 @@
               "WebsiteConfiguration": {
                   "IndexDocument": "index.html"
               },
-              "BucketName": {
-                  "Fn::Sub": "${WebsiteName}.${DomainName}"
-              },
+              "BucketName": { "Ref": "DomainName" },
               "PublicAccessBlockConfiguration": {
                 "BlockPublicAcls": false,
                 "BlockPublicPolicy": false,
@@ -183,9 +165,7 @@
           "Properties": {
               "DistributionConfig": {
                   "Aliases": [
-                      {
-                          "Fn::Sub": "${WebsiteName}.${DomainName}"
-                      }
+                     { "Ref": "DomainName" }
                   ],
                   "Enabled": true,
                   "HttpVersion": "http2",
@@ -208,209 +188,79 @@
                   "CacheBehaviors": [
                       {
                           "PathPattern": "*.css",
-                          "TargetOriginId": {
-                              "Fn::If": [
-                                  "BucketNameEmpty",
-                                  {
-                                      "Fn::Sub": "S3-origin-${HTML}"
-                                  },
-                                  {
-                                      "Fn::Sub": "S3-origin-${BucketName}"
-                                  }
-                              ]
-                          },
+                          "TargetOriginId": "S3-origin",
                           "ViewerProtocolPolicy": "redirect-to-https",
                           "CachePolicyId": "658327ea-f89d-4fab-a63d-7e88639e58f6"
                       },
                       {
                           "PathPattern": "*.js",
-                          "TargetOriginId": {
-                              "Fn::If": [
-                                  "BucketNameEmpty",
-                                  {
-                                      "Fn::Sub": "S3-origin-${HTML}"
-                                  },
-                                  {
-                                      "Fn::Sub": "S3-origin-${BucketName}"
-                                  }
-                              ]
-                          },
+                          "TargetOriginId": "S3-origin",
                           "ViewerProtocolPolicy": "redirect-to-https",
                           "CachePolicyId": "658327ea-f89d-4fab-a63d-7e88639e58f6"
                       },
                       {
                           "PathPattern": "*.jpg",
-                          "TargetOriginId": {
-                              "Fn::If": [
-                                  "BucketNameEmpty",
-                                  {
-                                      "Fn::Sub": "S3-origin-${HTML}"
-                                  },
-                                  {
-                                      "Fn::Sub": "S3-origin-${BucketName}"
-                                  }
-                              ]
-                          },
+                          "TargetOriginId": "S3-origin",
                           "ViewerProtocolPolicy": "redirect-to-https",
                           "CachePolicyId": "658327ea-f89d-4fab-a63d-7e88639e58f6"
                       },
                       {
                           "PathPattern": "*.jpeg",
-                          "TargetOriginId": {
-                              "Fn::If": [
-                                  "BucketNameEmpty",
-                                  {
-                                      "Fn::Sub": "S3-origin-${HTML}"
-                                  },
-                                  {
-                                      "Fn::Sub": "S3-origin-${BucketName}"
-                                  }
-                              ]
-                          },
+                          "TargetOriginId": "S3-origin",
                           "ViewerProtocolPolicy": "redirect-to-https",
                           "CachePolicyId": "658327ea-f89d-4fab-a63d-7e88639e58f6"
                       },
                       {
                           "PathPattern": "*.png",
-                          "TargetOriginId": {
-                              "Fn::If": [
-                                  "BucketNameEmpty",
-                                  {
-                                      "Fn::Sub": "S3-origin-${HTML}"
-                                  },
-                                  {
-                                      "Fn::Sub": "S3-origin-${BucketName}"
-                                  }
-                              ]
-                          },
+                          "TargetOriginId": "S3-origin",
                           "ViewerProtocolPolicy": "redirect-to-https",
                           "CachePolicyId": "658327ea-f89d-4fab-a63d-7e88639e58f6"
                       },
                       {
                           "PathPattern": "*.gif",
-                          "TargetOriginId": {
-                              "Fn::If": [
-                                  "BucketNameEmpty",
-                                  {
-                                      "Fn::Sub": "S3-origin-${HTML}"
-                                  },
-                                  {
-                                      "Fn::Sub": "S3-origin-${BucketName}"
-                                  }
-                              ]
-                          },
+                          "TargetOriginId": "S3-origin",
                           "ViewerProtocolPolicy": "redirect-to-https",
                           "CachePolicyId": "658327ea-f89d-4fab-a63d-7e88639e58f6"
                       },
                       {
                           "PathPattern": "*.ico",
-                          "TargetOriginId": {
-                              "Fn::If": [
-                                  "BucketNameEmpty",
-                                  {
-                                      "Fn::Sub": "S3-origin-${HTML}"
-                                  },
-                                  {
-                                      "Fn::Sub": "S3-origin-${BucketName}"
-                                  }
-                              ]
-                          },
+                          "TargetOriginId": "S3-origin",
                           "ViewerProtocolPolicy": "redirect-to-https",
                           "CachePolicyId": "658327ea-f89d-4fab-a63d-7e88639e58f6"
                       },
                       {
                           "PathPattern": "*.svg",
-                          "TargetOriginId": {
-                              "Fn::If": [
-                                  "BucketNameEmpty",
-                                  {
-                                      "Fn::Sub": "S3-origin-${HTML}"
-                                  },
-                                  {
-                                      "Fn::Sub": "S3-origin-${BucketName}"
-                                  }
-                              ]
-                          },
+                          "TargetOriginId": "S3-origin",
                           "ViewerProtocolPolicy": "redirect-to-https",
                           "CachePolicyId": "658327ea-f89d-4fab-a63d-7e88639e58f6"
                       },
                       {
                           "PathPattern": "*.woff",
-                          "TargetOriginId": {
-                              "Fn::If": [
-                                  "BucketNameEmpty",
-                                  {
-                                      "Fn::Sub": "S3-origin-${HTML}"
-                                  },
-                                  {
-                                      "Fn::Sub": "S3-origin-${BucketName}"
-                                  }
-                              ]
-                          },
+                          "TargetOriginId": "S3-origin",
                           "ViewerProtocolPolicy": "redirect-to-https",
                           "CachePolicyId": "658327ea-f89d-4fab-a63d-7e88639e58f6"
                       },
                       {
                           "PathPattern": "*.woff2",
-                          "TargetOriginId": {
-                              "Fn::If": [
-                                  "BucketNameEmpty",
-                                  {
-                                      "Fn::Sub": "S3-origin-${HTML}"
-                                  },
-                                  {
-                                      "Fn::Sub": "S3-origin-${BucketName}"
-                                  }
-                              ]
-                          },
+                          "TargetOriginId": "S3-origin",
                           "ViewerProtocolPolicy": "redirect-to-https",
                           "CachePolicyId": "658327ea-f89d-4fab-a63d-7e88639e58f6"
                       },
                       {
                           "PathPattern": "*.ttf",
-                          "TargetOriginId": {
-                              "Fn::If": [
-                                  "BucketNameEmpty",
-                                  {
-                                      "Fn::Sub": "S3-origin-${HTML}"
-                                  },
-                                  {
-                                      "Fn::Sub": "S3-origin-${BucketName}"
-                                  }
-                              ]
-                          },
+                          "TargetOriginId": "S3-origin",
                           "ViewerProtocolPolicy": "redirect-to-https",
                           "CachePolicyId": "658327ea-f89d-4fab-a63d-7e88639e58f6"
                       },
                       {
                           "PathPattern": "*.webp",
-                          "TargetOriginId": {
-                              "Fn::If": [
-                                  "BucketNameEmpty",
-                                  {
-                                      "Fn::Sub": "S3-origin-${HTML}"
-                                  },
-                                  {
-                                      "Fn::Sub": "S3-origin-${BucketName}"
-                                  }
-                              ]
-                          },
+                          "TargetOriginId": "S3-origin",
                           "ViewerProtocolPolicy": "redirect-to-https",
                           "CachePolicyId": "658327ea-f89d-4fab-a63d-7e88639e58f6"
                       }
                   ],
                   "DefaultCacheBehavior": {
-                      "TargetOriginId": {
-                          "Fn::If": [
-                              "BucketNameEmpty",
-                              {
-                                  "Fn::Sub": "S3-origin-${HTML}"
-                              },
-                              {
-                                  "Fn::Sub": "S3-origin-${BucketName}"
-                              }
-                          ]
-                      },
+                      "TargetOriginId": "S3-origin",
                       "ViewerProtocolPolicy": "redirect-to-https",
                       "AllowedMethods": [
                           "HEAD",
@@ -438,17 +288,7 @@
                                   }
                               ]
                           },
-                          "Id": {
-                              "Fn::If": [
-                                  "BucketNameEmpty",
-                                  {
-                                      "Fn::Sub": "S3-origin-${HTML}"
-                                  },
-                                  {
-                                      "Fn::Sub": "S3-origin-${BucketName}"
-                                  }
-                              ]
-                          },
+                          "Id": "S3-origin",
                           "CustomOriginConfig": {
                             "HTTPPort": 80,
                             "OriginProtocolPolicy": "http-only"
