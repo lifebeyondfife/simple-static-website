@@ -58,6 +58,72 @@
               },
               ""
           ]
+      },
+      "IsBaseDomain": {
+          "Fn::And": [
+              {
+                  "Fn::Not": [
+                      {
+                          "Fn::Equals": [
+                              {
+                                  "Fn::Select": [
+                                      0,
+                                      {
+                                          "Fn::Split": [
+                                              ".",
+                                              {
+                                                  "Ref": "DomainName"
+                                              }
+                                          ]
+                                      }
+                                  ]
+                              },
+                              "www"
+                          ]
+                      }
+                  ]
+              },
+              {
+                  "Fn::Equals": [
+                      {
+                          "Ref": "DomainName"
+                      },
+                      {
+                          "Fn::Join": [
+                              ".",
+                              [
+                                  {
+                                      "Fn::Select": [
+                                          0,
+                                          {
+                                              "Fn::Split": [
+                                                  ".",
+                                                  {
+                                                      "Ref": "DomainName"
+                                                  }
+                                              ]
+                                          }
+                                      ]
+                                  },
+                                  {
+                                      "Fn::Select": [
+                                          1,
+                                          {
+                                              "Fn::Split": [
+                                                  ".",
+                                                  {
+                                                      "Ref": "DomainName"
+                                                  }
+                                              ]
+                                          }
+                                      ]
+                                  }
+                              ]
+                          ]
+                      }
+                  ]
+              }
+          ]
       }
   },
   "Resources": {
@@ -65,6 +131,20 @@
           "Type": "AWS::CertificateManager::Certificate",
           "Properties": {
               "DomainName": { "Ref": "DomainName" },
+              "SubjectAlternativeNames": [
+                  { "Ref": "DomainName" },
+                  {
+                      "Fn::If": [
+                          "IsBaseDomain",
+                          {
+                              "Fn::Sub": "www.${DomainName}"
+                          },
+                          {
+                              "Ref": "AWS::NoValue"
+                          }
+                      ]
+                  }
+              ],
               "DomainValidationOptions": [
                   {
                       "DomainName": { "Ref": "DomainName" },
@@ -111,6 +191,50 @@
                   "Ref": "HostedZoneId"
               },
               "Name": { "Ref": "DomainName" },
+              "Type": "AAAA"
+          }
+      },
+      "WWWARecordSet": {
+          "Type": "AWS::Route53::RecordSet",
+          "Condition": "IsBaseDomain",
+          "Properties": {
+              "AliasTarget": {
+                  "HostedZoneId": "Z2FDTNDATAQYW2",
+                  "DNSName": {
+                      "Fn::GetAtt": [
+                          "DistributionCloudFrontNet",
+                          "DomainName"
+                      ]
+                  }
+              },
+              "HostedZoneId": {
+                  "Ref": "HostedZoneId"
+              },
+              "Name": {
+                  "Fn::Sub": "www.${DomainName}"
+              },
+              "Type": "A"
+          }
+      },
+      "WWWAAAARecordSet": {
+          "Type": "AWS::Route53::RecordSet",
+          "Condition": "IsBaseDomain",
+          "Properties": {
+              "AliasTarget": {
+                  "HostedZoneId": "Z2FDTNDATAQYW2",
+                  "DNSName": {
+                      "Fn::GetAtt": [
+                          "DistributionCloudFrontNet",
+                          "DomainName"
+                      ]
+                  }
+              },
+              "HostedZoneId": {
+                  "Ref": "HostedZoneId"
+              },
+              "Name": {
+                  "Fn::Sub": "www.${DomainName}"
+              },
               "Type": "AAAA"
           }
       },
@@ -164,9 +288,18 @@
           "Type": "AWS::CloudFront::Distribution",
           "Properties": {
               "DistributionConfig": {
-                  "Aliases": [
-                     { "Ref": "DomainName" }
-                  ],
+                  "Aliases": {
+                      "Fn::If": [
+                          "IsBaseDomain",
+                          [
+                              { "Ref": "DomainName" },
+                              { "Fn::Sub": "www.${DomainName}" }
+                          ],
+                          [
+                              { "Ref": "DomainName" }
+                          ]
+                      ]
+                  },
                   "Enabled": true,
                   "HttpVersion": "http2",
                   "PriceClass": "PriceClass_100",
@@ -355,6 +488,13 @@
               "Fn::Sub": "https://${ARecordSet}"
           },
           "Description": "Simple website URL (remember to put some HTML in the S3 bucket)"
+      },
+      "WWWRoute53URL": {
+          "Condition": "IsBaseDomain",
+          "Value": {
+              "Fn::Sub": "https://www.${DomainName}"
+          },
+          "Description": "WWW subdomain URL"
       },
       "CloudFrontURL": {
           "Value": {
