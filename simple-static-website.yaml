@@ -33,11 +33,26 @@ Metadata:
         default: Hosted Zone Id
 Conditions:
   BucketNameEmpty: !Equals [!Ref BucketName, ""]
+  IsBaseDomain: !And
+    - !Not
+        - !Equals [!Select [0, !Split [".", !Ref DomainName]], "www"]
+    - !Equals
+        - !Ref DomainName
+        - !Join 
+            - "."
+            - - !Select [0, !Split [".", !Ref DomainName]]
+              - !Select [1, !Split [".", !Ref DomainName]]
 Resources:
   Certificate:
     Type: AWS::CertificateManager::Certificate
     Properties:
       DomainName: !Ref DomainName
+      SubjectAlternativeNames:
+        - !Ref DomainName
+        - !If
+          - IsBaseDomain
+          - !Sub "www.${DomainName}"
+          - !Ref "AWS::NoValue"
       DomainValidationOptions:
         - DomainName: !Ref DomainName
           HostedZoneId: !Ref HostedZoneId
@@ -59,6 +74,26 @@ Resources:
         DNSName: !GetAtt DistributionCloudFrontNet.DomainName
       HostedZoneId: !Ref HostedZoneId
       Name: !Ref DomainName
+      Type: AAAA
+  WWWARecordSet:
+    Type: AWS::Route53::RecordSet
+    Condition: IsBaseDomain
+    Properties:
+      AliasTarget:
+        HostedZoneId: Z2FDTNDATAQYW2
+        DNSName: !GetAtt DistributionCloudFrontNet.DomainName
+      HostedZoneId: !Ref HostedZoneId
+      Name: !Sub "www.${DomainName}"
+      Type: A
+  WWWAAAARecordSet:
+    Type: AWS::Route53::RecordSet
+    Condition: IsBaseDomain
+    Properties:
+      AliasTarget:
+        HostedZoneId: Z2FDTNDATAQYW2
+        DNSName: !GetAtt DistributionCloudFrontNet.DomainName
+      HostedZoneId: !Ref HostedZoneId
+      Name: !Sub "www.${DomainName}"
       Type: AAAA
   HTML:
     Type: AWS::S3::Bucket
@@ -96,8 +131,11 @@ Resources:
     Type: AWS::CloudFront::Distribution
     Properties:
       DistributionConfig:
-        Aliases:
-          - !Ref DomainName
+        Aliases: !If
+          - IsBaseDomain
+          - - !Ref DomainName
+            - !Sub "www.${DomainName}"
+          - - !Ref DomainName
         Enabled: true
         HttpVersion: http2
         PriceClass: PriceClass_100
@@ -213,6 +251,10 @@ Outputs:
   Route53URL:
     Value: !Sub https://${ARecordSet}
     Description: Simple website URL (remember to put some HTML in the S3 bucket)
+  WWWRoute53URL:
+    Condition: IsBaseDomain
+    Value: !Sub https://www.${DomainName}
+    Description: WWW subdomain URL
   CloudFrontURL:
     Value: !GetAtt DistributionCloudFrontNet.DomainName
     Description: CloudFront URL
