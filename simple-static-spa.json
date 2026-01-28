@@ -1,0 +1,491 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "Cloudfront-ed S3 Bucket",
+  "Parameters": {
+    "DomainName": {
+      "Type": "String",
+      "Description": "Complete domain name, e.g. \"example.com\" or \"www.example.com\""
+    },
+    "BucketName": {
+      "Type": "String",
+      "Default": "",
+      "Description": "If not supplied, a bucket will be created and named after the domain"
+    },
+    "HostedZoneId": {
+      "Type": "AWS::Route53::HostedZone::Id",
+      "Description": "You must already have a Hosted Zone setup for your domain in Route53."
+    }
+  },
+  "Metadata": {
+    "AWS::CloudFormation::Interface": {
+      "ParameterGroups": [
+        {
+          "Label": {
+            "default": "DNS"
+          },
+          "Parameters": [
+            "HostedZoneId",
+            "DomainName"
+          ]
+        },
+        {
+          "Label": {
+            "default": "Optional"
+          },
+          "Parameters": [
+            "BucketName"
+          ]
+        }
+      ],
+      "ParameterLabels": {
+        "BucketName": {
+          "default": "Existing S3 Bucket Name"
+        },
+        "DomainName": {
+          "default": "Domain Name"
+        },
+        "HostedZoneId": {
+          "default": "Hosted Zone Id"
+        }
+      }
+    }
+  },
+  "Conditions": {
+    "BucketNameEmpty": {
+      "Fn::Equals": [
+        {
+          "Ref": "BucketName"
+        },
+        ""
+      ]
+    },
+    "IsBaseDomain": {
+      "Fn::And": [
+        {
+          "Fn::Not": [
+            {
+              "Fn::Equals": [
+                {
+                  "Fn::Select": [
+                    0,
+                    {
+                      "Fn::Split": [
+                        ".",
+                        {
+                          "Ref": "DomainName"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                "www"
+              ]
+            }
+          ]
+        },
+        {
+          "Fn::Equals": [
+            {
+              "Ref": "DomainName"
+            },
+            {
+              "Fn::Join": [
+                ".",
+                [
+                  {
+                    "Fn::Select": [
+                      0,
+                      {
+                        "Fn::Split": [
+                          ".",
+                          {
+                            "Ref": "DomainName"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "Fn::Select": [
+                      1,
+                      {
+                        "Fn::Split": [
+                          ".",
+                          {
+                            "Ref": "DomainName"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "Resources": {
+    "Certificate": {
+      "Type": "AWS::CertificateManager::Certificate",
+      "Properties": {
+        "DomainName": {
+          "Ref": "DomainName"
+        },
+        "SubjectAlternativeNames": [
+          {
+            "Ref": "DomainName"
+          },
+          {
+            "Fn::If": [
+              "IsBaseDomain",
+              {
+                "Fn::Sub": "www.${DomainName}"
+              },
+              {
+                "Ref": "AWS::NoValue"
+              }
+            ]
+          }
+        ],
+        "DomainValidationOptions": [
+          {
+            "DomainName": {
+              "Ref": "DomainName"
+            },
+            "HostedZoneId": {
+              "Ref": "HostedZoneId"
+            }
+          }
+        ],
+        "ValidationMethod": "DNS"
+      }
+    },
+    "ARecordSet": {
+      "Type": "AWS::Route53::RecordSet",
+      "Properties": {
+        "AliasTarget": {
+          "HostedZoneId": "Z2FDTNDATAQYW2",
+          "DNSName": {
+            "Fn::GetAtt": [
+              "DistributionCloudFrontNet",
+              "DomainName"
+            ]
+          }
+        },
+        "HostedZoneId": {
+          "Ref": "HostedZoneId"
+        },
+        "Name": {
+          "Ref": "DomainName"
+        },
+        "Type": "A"
+      }
+    },
+    "AAAARecordSet": {
+      "Type": "AWS::Route53::RecordSet",
+      "Properties": {
+        "AliasTarget": {
+          "HostedZoneId": "Z2FDTNDATAQYW2",
+          "DNSName": {
+            "Fn::GetAtt": [
+              "DistributionCloudFrontNet",
+              "DomainName"
+            ]
+          }
+        },
+        "HostedZoneId": {
+          "Ref": "HostedZoneId"
+        },
+        "Name": {
+          "Ref": "DomainName"
+        },
+        "Type": "AAAA"
+      }
+    },
+    "WWWARecordSet": {
+      "Type": "AWS::Route53::RecordSet",
+      "Condition": "IsBaseDomain",
+      "Properties": {
+        "AliasTarget": {
+          "HostedZoneId": "Z2FDTNDATAQYW2",
+          "DNSName": {
+            "Fn::GetAtt": [
+              "DistributionCloudFrontNet",
+              "DomainName"
+            ]
+          }
+        },
+        "HostedZoneId": {
+          "Ref": "HostedZoneId"
+        },
+        "Name": {
+          "Fn::Sub": "www.${DomainName}"
+        },
+        "Type": "A"
+      }
+    },
+    "WWWAAAARecordSet": {
+      "Type": "AWS::Route53::RecordSet",
+      "Condition": "IsBaseDomain",
+      "Properties": {
+        "AliasTarget": {
+          "HostedZoneId": "Z2FDTNDATAQYW2",
+          "DNSName": {
+            "Fn::GetAtt": [
+              "DistributionCloudFrontNet",
+              "DomainName"
+            ]
+          }
+        },
+        "HostedZoneId": {
+          "Ref": "HostedZoneId"
+        },
+        "Name": {
+          "Fn::Sub": "www.${DomainName}"
+        },
+        "Type": "AAAA"
+      }
+    },
+    "HTML": {
+      "Type": "AWS::S3::Bucket",
+      "Condition": "BucketNameEmpty",
+      "Properties": {
+        "BucketName": {
+          "Ref": "DomainName"
+        },
+        "PublicAccessBlockConfiguration": {
+          "BlockPublicAcls": true,
+          "BlockPublicPolicy": true,
+          "IgnorePublicAcls": true,
+          "RestrictPublicBuckets": true
+        }
+      },
+      "DeletionPolicy": "Retain",
+      "UpdateReplacePolicy": "Retain"
+    },
+    "ResponseHeadersPolicy": {
+      "Type": "AWS::CloudFront::ResponseHeadersPolicy",
+      "Properties": {
+        "ResponseHeadersPolicyConfig": {
+          "Name": {
+            "Fn::Sub": "${AWS::StackName}-security-headers"
+          },
+          "SecurityHeadersConfig": {
+            "StrictTransportSecurity": {
+              "AccessControlMaxAgeSec": 31536000,
+              "IncludeSubdomains": true,
+              "Override": true
+            },
+            "ContentTypeOptions": {
+              "Override": true
+            },
+            "FrameOptions": {
+              "FrameOption": "DENY",
+              "Override": true
+            },
+            "ReferrerPolicy": {
+              "ReferrerPolicy": "strict-origin-when-cross-origin",
+              "Override": true
+            }
+          }
+        }
+      }
+    },
+    "OriginAccessControl": {
+      "Type": "AWS::CloudFront::OriginAccessControl",
+      "Properties": {
+        "OriginAccessControlConfig": {
+          "Name": {
+            "Fn::Sub": "${AWS::StackName}-OAC"
+          },
+          "OriginAccessControlOriginType": "s3",
+          "SigningBehavior": "always",
+          "SigningProtocol": "sigv4"
+        }
+      }
+    },
+    "DistributionCloudFrontNet": {
+      "Type": "AWS::CloudFront::Distribution",
+      "Properties": {
+        "DistributionConfig": {
+          "Aliases": {
+            "Fn::If": [
+              "IsBaseDomain",
+              [
+                {
+                  "Ref": "DomainName"
+                },
+                {
+                  "Fn::Sub": "www.${DomainName}"
+                }
+              ],
+              [
+                {
+                  "Ref": "DomainName"
+                }
+              ]
+            ]
+          },
+          "Enabled": true,
+          "HttpVersion": "http2",
+          "PriceClass": "PriceClass_100",
+          "DefaultRootObject": "index.html",
+          "CustomErrorResponses": [
+            {
+              "ErrorCode": 403,
+              "ResponseCode": 200,
+              "ResponsePagePath": "/index.html",
+              "ErrorCachingMinTTL": 300
+            },
+            {
+              "ErrorCode": 404,
+              "ResponseCode": 200,
+              "ResponsePagePath": "/index.html",
+              "ErrorCachingMinTTL": 300
+            }
+          ],
+          "DefaultCacheBehavior": {
+            "TargetOriginId": "S3-origin",
+            "ViewerProtocolPolicy": "redirect-to-https",
+            "AllowedMethods": [
+              "HEAD",
+              "GET"
+            ],
+            "CachedMethods": [
+              "HEAD",
+              "GET"
+            ],
+            "CachePolicyId": "4135ea2d-6df8-44a3-9df3-4b5a84be39ad",
+            "ResponseHeadersPolicyId": {
+              "Ref": "ResponseHeadersPolicy"
+            }
+          },
+          "Origins": [
+            {
+              "DomainName": {
+                "Fn::If": [
+                  "BucketNameEmpty",
+                  {
+                    "Fn::GetAtt": [
+                      "HTML",
+                      "RegionalDomainName"
+                    ]
+                  },
+                  {
+                    "Fn::Sub": "${BucketName}.s3.${AWS::Region}.amazonaws.com"
+                  }
+                ]
+              },
+              "Id": "S3-origin",
+              "S3OriginConfig": {
+                "OriginAccessIdentity": ""
+              },
+              "OriginAccessControlId": {
+                "Ref": "OriginAccessControl"
+              }
+            }
+          ],
+          "Restrictions": {
+            "GeoRestriction": {
+              "RestrictionType": "none",
+              "Locations": []
+            }
+          },
+          "ViewerCertificate": {
+            "SslSupportMethod": "sni-only",
+            "MinimumProtocolVersion": "TLSv1.2_2021",
+            "AcmCertificateArn": {
+              "Ref": "Certificate"
+            }
+          }
+        }
+      }
+    },
+    "BucketPolicy": {
+      "Type": "AWS::S3::BucketPolicy",
+      "Properties": {
+        "Bucket": {
+          "Fn::If": [
+            "BucketNameEmpty",
+            {
+              "Ref": "HTML"
+            },
+            {
+              "Ref": "BucketName"
+            }
+          ]
+        },
+        "PolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "cloudfront.amazonaws.com"
+              },
+              "Action": "s3:GetObject",
+              "Resource": {
+                "Fn::If": [
+                  "BucketNameEmpty",
+                  {
+                    "Fn::Sub": "arn:aws:s3:::${HTML}/*"
+                  },
+                  {
+                    "Fn::Sub": "arn:aws:s3:::${BucketName}/*"
+                  }
+                ]
+              },
+              "Condition": {
+                "StringEquals": {
+                  "AWS:SourceArn": {
+                    "Fn::Sub": "arn:aws:cloudfront::${AWS::AccountId}:distribution/${DistributionCloudFrontNet}"
+                  }
+                }
+              }
+            }
+          ]
+        }
+      }
+    }
+  },
+  "Outputs": {
+    "Route53URL": {
+      "Value": {
+        "Fn::Sub": "https://${ARecordSet}"
+      },
+      "Description": "Simple website URL (remember to put some HTML in the S3 bucket)"
+    },
+    "WWWRoute53URL": {
+      "Condition": "IsBaseDomain",
+      "Value": {
+        "Fn::Sub": "https://www.${DomainName}"
+      },
+      "Description": "WWW subdomain URL"
+    },
+    "CloudFrontURL": {
+      "Value": {
+        "Fn::GetAtt": [
+          "DistributionCloudFrontNet",
+          "DomainName"
+        ]
+      },
+      "Description": "CloudFront URL"
+    },
+    "Upload": {
+      "Value": {
+        "Fn::If": [
+          "BucketNameEmpty",
+          {
+            "Fn::Sub": "aws s3 cp index.html s3://${HTML}"
+          },
+          {
+            "Fn::Sub": "aws s3 cp index.html s3://${BucketName}"
+          }
+        ]
+      },
+      "Description": "Upload your first file"
+    }
+  }
+}
